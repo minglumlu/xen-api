@@ -1327,6 +1327,15 @@ let t =
             ~default_value:(Some (VBool false)) "migration_compression"
             "Default behaviour during migration, True if stream compression \
              should be used"
+        ; field ~qualifier:DynamicRO ~lifecycle:[] ~ty:(Option String)
+            ~default_value:(Some (VString "")) "telemetry_uuid"
+            "The UUID of the pool for identification of telemetry data"
+        ; field ~qualifier:RW ~lifecycle:[] ~ty:Bool
+            ~default_value:(Some (VBool true)) "telemetry_optional"
+            "True if optional telemetry data should be collected"
+        ; field ~qualifier:RW ~lifecycle:[] ~ty:DateTime
+            ~default_value:(Some (VDateTime Date.never)) "telemetry_next_schedule"
+            "The time after when the next round of telemetry collection will be carried out"
         ]
       )
     ()

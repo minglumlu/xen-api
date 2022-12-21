@@ -1453,6 +1453,27 @@ let pool_record rpc session_id pool =
               ~value:(bool_of_string x)
           )
           ()
+      ; make_field ~name:"telemetry-uuid"
+          ~get:(fun () -> (x ()).API.pool_telemetry_uuid)
+          ()
+      ; make_field ~name:"telemetry-optional"
+          ~get:(fun () ->
+            (x ()).API.pool_telemetry_optional |> string_of_bool
+          )
+          ~set:(fun x ->
+            Client.Pool.set_telemetry_optional ~rpc ~session_id ~self:pool
+              ~value:(bool_of_string x)
+          )
+          ()
+      ; make_field ~name:"telemetry-next-schedule"
+          ~get:(fun () ->
+            (x ()).API.pool_telemetry_next_schedule |> Date.to_string
+          )
+          ~set:(fun x ->
+            Client.Pool.set_telemetry_next_schedule ~rpc ~session_id ~self:pool
+              ~value:(Data.of_string x)
+          )
+          ()
       ]
   }
 

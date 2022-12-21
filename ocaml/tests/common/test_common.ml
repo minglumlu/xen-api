@@ -284,7 +284,9 @@ let make_pool ~__context ~master ?(name_label = "") ?(name_description = "")
     ?(client_certificate_auth_enabled = false)
     ?(client_certificate_auth_name = "") ?(repository_proxy_url = "")
     ?(repository_proxy_username = "") ?(repository_proxy_password = Ref.null)
-    ?(migration_compression = false) () =
+    ?(migration_compression = false) ?(telemetry_id = "")
+    ?(telemetry_optional = true) ?(telemetry_next_schedule = Date.never)
+    () =
   let pool_ref = Ref.make () in
   Db.Pool.create ~__context ~ref:pool_ref ~uuid:(make_uuid ()) ~name_label
     ~name_description ~master ~default_SR ~suspend_image_SR ~crash_dump_SR

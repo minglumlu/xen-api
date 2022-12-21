@@ -286,6 +286,16 @@ let ensure_vm_metrics_records_exist_noexn __context =
   Helpers.log_exn_continue "ensuring VM_metrics flags exist"
     ensure_vm_metrics_records_exist __context
 
+let create_telemetry_uuid ~__context =
+  let pool = Helpers.get_pool ~__context in
+  match Db.Pool.get_telemetry_uuid ~__context ~self:pool with
+  | "" ->
+      let uuid = (Uuidx.to_string (Uuidx.make ())) in
+      debug "Generating telemetry UUID" ;
+      Db.Pool.set_telemetry_uuid ~__context ~self:pool ~value:uuid
+  | _ ->
+      ()
+
 (* Update the database to reflect current state. Called for both start of day and after
    an agent restart. *)
 let update_env __context =
@@ -296,6 +306,7 @@ let update_env __context =
   set_master_pool_reference ~__context ;
   set_master_ip ~__context ;
   set_master_live ~__context ;
+  create_telemetry_uuid ~__context ;
   (* CA-15449: when we restore from backup we end up with Hosts being forgotten and VMs
      marked as running with dangling resident_on references. We delete the control domains
      and reset the rest to Halted. *)
