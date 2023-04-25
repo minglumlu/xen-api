@@ -289,9 +289,14 @@ let make_pool ~__context ~master ?(name_label = "") ?(name_description = "")
     ?(client_certificate_auth_name = "") ?(repository_proxy_url = "")
     ?(repository_proxy_username = "") ?(repository_proxy_password = Ref.null)
     ?(migration_compression = false) ?(coordinator_bias = true)
+<<<<<<< HEAD
     ?(last_update_sync = API.Date.epoch) ?(update_sync_frequency = `daily)
     ?(update_sync_day = 1L) ?(update_sync_hour = 0L)
     ?(update_sync_enabled = false) () =
+=======
+    ?(telemetry_uuid = Ref.null) ?(telemetry_frequency = `weekly)
+    ?(telemetry_next_collection = API.Date.never) () =
+>>>>>>> mingl-master
   let pool_ref = Ref.make () in
   Db.Pool.create ~__context ~ref:pool_ref ~uuid:(make_uuid ()) ~name_label
     ~name_description ~master ~default_SR ~suspend_image_SR ~crash_dump_SR
@@ -306,9 +311,14 @@ let make_pool ~__context ~master ?(name_label = "") ?(name_description = "")
     ~tls_verification_enabled:false ~repositories
     ~client_certificate_auth_enabled ~client_certificate_auth_name
     ~repository_proxy_url ~repository_proxy_username ~repository_proxy_password
+<<<<<<< HEAD
     ~migration_compression ~coordinator_bias ~last_update_sync
     ~update_sync_frequency ~update_sync_day ~update_sync_hour
     ~update_sync_enabled ;
+=======
+    ~migration_compression ~coordinator_bias ~telemetry_uuid
+    ~telemetry_frequency ~telemetry_next_collection ;
+>>>>>>> mingl-master
   pool_ref
 
 let default_sm_features =
@@ -500,7 +510,6 @@ let make_pool_update ~__context ?(ref = Ref.make ()) ?(uuid = make_uuid ())
       ; after_apply_guidance
       ; enforce_homogeneity
       }
-    
   in
 
   Xapi_pool_update.create_update_record ~__context ~update:ref ~update_info ~vdi ;

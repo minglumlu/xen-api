@@ -47,6 +47,16 @@ let operations =
       ]
     )
 
+let telemetry_frequency =
+  Enum
+    ( "telemetry_frequency"
+    , [
+        ("daily", "Run telemetry task daily")
+      ; ("weekly", "Run telemetry task weekly")
+      ; ("monthly", "Run telemetry task monthly")
+      ]
+    )
+
 let enable_ha =
   call ~in_product_since:rel_miami ~name:"enable_ha" ~in_oss_since:None
     ~versioned_params:
@@ -274,7 +284,8 @@ let hello =
 
 let ping_slave =
   call ~flags:[`Session] ~name:"is_slave" ~in_oss_since:None
-    ~in_product_since:rel_rio ~params:[(Ref _host, "host", "")]
+    ~in_product_since:rel_rio
+    ~params:[(Ref _host, "host", "")]
     ~doc:"Internal use only"
     ~result:
       ( Bool
@@ -1024,6 +1035,7 @@ let set_uefi_certificates =
       ]
     ~allowed_roles:_R_POOL_ADMIN ()
 
+<<<<<<< HEAD
 let update_sync_frequency =
   Enum
     ( "update_sync_frequency"
@@ -1063,6 +1075,27 @@ let configure_update_sync =
         )
       ]
     ~allowed_roles:_R_POOL_OP ()
+=======
+let set_telemetry_next_collection =
+  call ~name:"set_telemetry_next_collection" ~lifecycle:[]
+    ~doc:"Set the timestamp for the next telemetry data collection."
+    ~params:
+      [
+        (Ref _pool, "self", "The pool")
+      ; ( DateTime
+        , "value"
+        , "The earliest timestamp (in UTC) when the next round of telemetry \
+           collection can be carried out."
+        )
+      ]
+    ~allowed_roles:_R_POOL_ADMIN ()
+
+let reset_telemetry_uuid =
+  call ~name:"reset_telemetry_uuid" ~lifecycle:[]
+    ~doc:"Assign a new UUID to telemetry data."
+    ~params:[(Ref _pool, "self", "The pool")]
+    ~allowed_roles:_R_POOL_ADMIN ()
+>>>>>>> mingl-master
 
 (** A pool class *)
 let t =
@@ -1146,7 +1179,12 @@ let t =
       ; disable_repository_proxy
       ; set_uefi_certificates
       ; set_https_only
+<<<<<<< HEAD
       ; configure_update_sync
+=======
+      ; set_telemetry_next_collection
+      ; reset_telemetry_uuid
+>>>>>>> mingl-master
       ]
     ~contents:
       ([uid ~in_oss_since:None _pool]
@@ -1359,9 +1397,14 @@ let t =
             ~default_value:(Some (VString "")) "repository_proxy_username"
             "Username for the authentication of the proxy used in syncing with \
              the enabled repositories"
-        ; field ~in_product_since:"21.3.0" ~internal_only:true
-            ~qualifier:DynamicRO ~ty:(Ref _secret)
-            ~default_value:(Some (VRef null_ref)) "repository_proxy_password"
+        ; field ~qualifier:DynamicRO
+            ~lifecycle:
+              [
+                (Published, "21.3.0", "")
+              ; (Changed, rel_next, "Changed internal_only to false")
+              ]
+            ~ty:(Ref _secret) ~default_value:(Some (VRef null_ref))
+            "repository_proxy_password"
             "Password for the authentication of the proxy used in syncing with \
              the enabled repositories"
         ; field ~qualifier:RW ~lifecycle:[] ~ty:Bool
@@ -1372,6 +1415,7 @@ let t =
             "coordinator_bias"
             "true if bias against pool master when scheduling vms is enabled, \
              false otherwise"
+<<<<<<< HEAD
         ; field ~qualifier:DynamicRO ~lifecycle:[] ~ty:DateTime
             ~default_value:(Some (VDateTime Date.epoch)) "last_update_sync"
             "time of the last update sychronization"
@@ -1388,6 +1432,19 @@ let t =
         ; field ~qualifier:DynamicRO ~lifecycle:[] ~ty:Bool
             ~default_value:(Some (VBool false)) "update_sync_enabled"
             "If scheduled update sychronization is enabled or not"
+=======
+        ; field ~lifecycle:[] ~qualifier:DynamicRO ~ty:(Ref _secret)
+            ~default_value:(Some (VRef null_ref)) "telemetry_uuid"
+            "The UUID of the pool for identification of telemetry data"
+        ; field ~lifecycle:[] ~qualifier:DynamicRO ~ty:telemetry_frequency
+            ~default_value:(Some (VEnum "weekly")) "telemetry_frequency"
+            "How often the telemetry collection will be carried out"
+        ; field ~qualifier:DynamicRO ~lifecycle:[] ~ty:DateTime
+            ~default_value:(Some (VDateTime Date.epoch))
+            "telemetry_next_collection"
+            "The earliest timestamp (in UTC) when the next round of telemetry \
+             collection can be carried out"
+>>>>>>> mingl-master
         ]
       )
     ()

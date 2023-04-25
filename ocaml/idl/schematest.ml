@@ -1,7 +1,13 @@
 let hash x = Digest.string x |> Digest.to_hex
 
+<<<<<<< HEAD
 (* BEWARE: if this changes, check that schema has been bumped accordingly *)
 let last_known_schema_hash = "4c64949949d7f6fba87cbb9b9ac4ff40"
+=======
+(* BEWARE: if this changes, check that schema has been bumped accordingly in
+   ocaml/idl/datamodel_common.ml, usually schema_minor_vsn *)
+let last_known_schema_hash = "c0f465587c9f59f8c17d1afa3c2998b2"
+>>>>>>> mingl-master
 
 let current_schema_hash : string =
   let open Datamodel_types in
