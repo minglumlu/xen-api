@@ -1,6 +1,9 @@
 ---
-title: Host Network Device Ordering
-description: Ordering the host network devices
+title: Host Network Device Ordering on Networkd
+layout: default
+design_doc: true
+revision: 1
+status: proposed
 ---
 
 Purpose
@@ -98,7 +101,7 @@ Bus Info: 0000:05:01.0
 Therefore, the order derived from these values is used solely for determining
 the initial order and the order of newly added devices.
 
-Priniciples
+Principles
 -----------
 * Initially, the order is aligned with PCI slots. This is to make the connection
 between cabling and order predictable: The network devices in identical PCI
