@@ -19,6 +19,11 @@ exception Stunnel_error of string
 
 exception Stunnel_verify_error of string
 
+type stunnel_error =
+  | Certificate_verify of string
+  | Stunnel of string
+  | Unknown of string
+
 val crl_path : string
 
 val timeoutidle : int option ref
@@ -82,6 +87,8 @@ val disconnect : ?wait:bool -> ?force:bool -> t -> unit
 
 val diagnose_failure : t -> unit
 
+val check_error_from_log_file : string -> unit
+
 val test : string -> int -> unit
 
 val move_out_exn : t -> t
@@ -99,3 +106,19 @@ val with_client_proxy_systemd_service :
   -> service:string
   -> (unit -> 'a)
   -> 'a
+
+val with_client_proxy_via_sock_file :
+     verify_cert:verification_config option
+  -> remote_host:string
+  -> remote_port:int
+  -> sock_file_path:string
+  -> (   check_stunnel_output:(unit -> (unit, stunnel_error) Result.t)
+      -> unit
+      -> 'a
+     )
+  -> 'a
+(** Establishes a connection to the specified [remote_host] and [remote_port]
+    via a stunnel process, using a UNIX socket file at [sock_file_path] to
+    accept non-TLS traffic. The provided function (last parameter) can send
+    traffic through the [sock_file_path] to the [remote_host] and [remote_port]
+    and check the stunnel error by invoking [check_stunnel_output ()]. *)
