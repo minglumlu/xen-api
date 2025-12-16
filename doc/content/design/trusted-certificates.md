@@ -132,3 +132,6 @@ The endpoint to validate the peer's identity must unambiguously choose only one 
 2. "CA Bundle"
 3. "Default Bundle"
 
+For example, if "Peer Bundle" exists for the particular purpose, use this bundle file and certificate pinning to validate the peer's identity.
+No more attempts with "CA Bundle" or "Default Bundle" even when the validation with "Peer Bundle" failed.
+
