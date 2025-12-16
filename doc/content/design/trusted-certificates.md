@@ -69,20 +69,21 @@ This is an existing API to install a trusted certificate into the pool with its 
 * cert (string): the certificate in PEM format.
 
 In this design, it is recommended to use it to install root CA certificates only.
-And a new argument "purposes" is appended to specify the purposes of the trusted certificate to be installed. By default it is an empty set.
+A new argument "purpose" is appended to specify the purposes of the trusted certificate to be installed. By default it is an empty set.
 * session (ref session_id): reference to a valid session;
 * name (string): the name of the certificate;
 * cert (string): the certificate in PEM format;
-* purposes (string list): the purposes of the certificate
+* purpose (string list): the purposes of the certificate
 
 ### pool.install_peer_certificate
 This is a new API introduced in this design with its arguments being defined as:
 * session (ref session_id): reference to a valid session;
 * name (string): the name of the certificate;
 * cert (string): the certificate in PEM format;
-* purposes (string list): the purposes of the certificate.
+* purpose (string list): the purposes of the certificate.
 
 This new API can be used to install trusted peer certificates only.
+The "purpose" parameter cannot be empty.
 
 And corresponding "pool.uninstall_peer_certificate" for uninstalling a trusted peer certificate with arguments:
 * session (ref session_id): reference to a valid session;
@@ -92,6 +93,11 @@ And corresponding "pool.uninstall_peer_certificate" for uninstalling a trusted p
 ### pool.join
 Since the trusted certificates managed in this design are pool-wide, any existing trusted certificates on the joining host should be removed during pool.join.
 Instead, all trusted certificates from the pool will be synchronized to the new host in the pre-join phase.
+
+### Other APIs
+The install/uninstall APIs above are not the only ways of managing the trusted certificates.
+A particular API, e.g. "pool.set_wlb_url", may also install the trusted certificate used to validate the WLB server on subsequent TLS connections.
+However, regardless of the entry point, all trusted certificates must be represented by a *Certificate* database object and stored in the same way described below as if installed by the install APIs.
 
 ## Trust store
 The trusted certificates are stored in individual hosts' filesystems.
@@ -103,20 +109,26 @@ The existing stores defined in the base design are:
 | Default Bundle  | /etc/stunnel/xapi-stunnel-ca-bundle.pem | no       | Bundle of certificates that hosts use to verify appliances (in particular WLB), this is kept in sync with "Trusted Default"
 | Pool Bundle     | /etc/stunnel/xapi-pool-ca-bundle.pem    | no       | Bundle of certificates that hosts use to verify other hosts on pool communications, this is kept in sync with "Trusted Pool"
 
-For backwards compatibility, when a trusted certificate is being installed via "pool.install_ca_certificate" or "pool.install_peer_certificate" but with empty "purposes",
+Regarding the "User-configurable", when it is "yes", it means a user can only install and remove the file via APIs; when it is "no", it means the user can't install or remove it even via APIs. In any cases, a user can't change the certificate files directly.
+
+For backwards compatibility, when a trusted certificate is being installed via "pool.install_ca_certificate" but with an empty "purpose",
 the trusted certificate will be stored as "Trusted Default" and "Default Bundle".
 The pool "Trusted Pool" and "Pool Bundle" are for host-to-host TLS communications within a pool. This design doesn't change them.
 
-When the "purposes" is not empty, the stores for the certificates installed via "pool.install_ca_certificate" or "pool.install_peer_certificate" are defined as:
+When the "purpose" is not empty, the stores for the certificates installed via "pool.install_ca_certificate" or "pool.install_peer_certificate" are defined as:
 | Name | Filesystem location | User-configurable | Used for |
 | ---- | ------------------- | ----------------- | -------- |
-| Trusted Peer | /etc/trusted-certs/peer-\<PURPOSE\>/     | no | Trusted peer certificates that users can install to validate a peer’s identity when establishing a TLS connection for \<PURPOSE\>
-| Trusted CA | /etc/trusted-certs/ca-\<PURPOSE\>/         | no | Trusted root CA certificates that users can install to validate a peer’s identity when establishing a TLS connection for \<PURPOSE\>
+| Trusted Peer | /etc/trusted-certs/peer-\<PURPOSE\>/     | yes (using API) | Trusted peer certificates that users can install to validate a peer’s identity when establishing a TLS connection for \<PURPOSE\>
+| Trusted CA | /etc/trusted-certs/ca-\<PURPOSE\>/         | yes (using API) | Trusted root CA certificates that users can install to validate a peer’s identity when establishing a TLS connection for \<PURPOSE\>
 | Peer Bundle  | /etc/trusted-certs/peer-bundle-\<PURPOSE\>.pem | no | Bundle of trusted peer certificates under /etc/trusted-certs/peer-\<PURPOSE\>/ to verify a peer's identity when establishing a TLS connection for \<PURPOSE\>
 | CA Bundle     | /etc/trusted-certs/ca-bundle-\<PURPOSE\>.pem  | no | Bundle of trusted root CA certificates under /etc/trusted-certs/ca-\<PURPOSE\>/ to verify a peer's identity when establishing a TLS connection for \<PURPOSE\>
 
 The filesystem location is derived from the \<PURPOSE\>. Each \<PURPOSE\> string corresponds to a predefined value of the "purpose" type in the database, implemented as predefined constants.
 
-The "Peer Bundle" and "CA Bundle" can be directly used by other non-XAPI processes when establishing TLS connections.
-Users can select the appropriate bundle based on the chosen validation method: certificate chain validation or certificate pinning.
+## Precedence order of choosing trust stores
+The "Peer Bundle", "CA Bundle", and "Default Bundle" can be directly used when establishing TLS connections.
+The endpoint to validate the peer's identity must unambiguously choose only one from these bundles with the following precedence order:
+1. "Peer Bundle"
+2. "CA Bundle"
+3. "Default Bundle"
 
