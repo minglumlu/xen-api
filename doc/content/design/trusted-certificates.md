@@ -57,7 +57,7 @@ The new "peer" will represent trusted peer certificates.
 
 * A new enumeration type "purpose" is introduced to indicate the intended usage of a trusted certificate.
 A new *Certificate* class field "purposes" (a set of values of enumeration type "purpose") will be added to represent all applicable purposes of a trusted certificate.
-By default, this set is empty which corresponds to the existing general "ca" certificates.
+By default, this set is empty which corresponds to the existing general "ca" certificates for backwards compatibility.
 
 ## API
 
@@ -68,7 +68,7 @@ This is an existing API to install a trusted certificate into the pool with its 
 * name (string): the name of the certificate;
 * cert (string): the certificate in PEM format.
 
-In this design, it is recommended to use it to install root CA certificates only.
+In this design, it is used to install root CA certificates only.
 A new argument "purpose" is appended to specify the purposes of the trusted certificate to be installed. By default it is an empty set.
 * session (ref session_id): reference to a valid session;
 * name (string): the name of the certificate;
@@ -111,9 +111,11 @@ The existing stores defined in the base design are:
 
 Regarding the "User-configurable", when it is "yes", it means a user can only install and remove the file via APIs; when it is "no", it means the user can't install or remove it even via APIs. In any cases, a user can't change the certificate files directly.
 
-For backwards compatibility, when a trusted certificate is being installed via "pool.install_ca_certificate" but with an empty "purpose",
-the trusted certificate will be stored as "Trusted Default" and "Default Bundle".
+When a trusted certificate is being installed via "pool.install_ca_certificate" but with an empty "purpose",
+the trusted certificate will be stored in the existing "Trusted Default" and "Default Bundle" for general purpose.
+There is no general‑purpose store for trusted peer certificates, because each peer certificate is specific to a single server and therefore unsuitable for a shared trust bundle for general purpose.
 The pool "Trusted Pool" and "Pool Bundle" are for host-to-host TLS communications within a pool. This design doesn't change them.
+
 
 When the "purpose" is not empty, the stores for the certificates installed via "pool.install_ca_certificate" or "pool.install_peer_certificate" are defined as:
 | Name | Filesystem location | User-configurable | Used for |
@@ -134,4 +136,3 @@ The endpoint to validate the peer's identity must unambiguously choose only one 
 
 For example, if "Peer Bundle" exists for the particular purpose, use this bundle file and certificate pinning to validate the peer's identity.
 No more attempts with "CA Bundle" or "Default Bundle" even when the validation with "Peer Bundle" failed.
-
