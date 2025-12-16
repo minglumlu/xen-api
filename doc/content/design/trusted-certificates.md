@@ -113,7 +113,9 @@ Regarding the "User-configurable", when it is "yes", it means a user can only in
 
 When a trusted certificate is being installed via "pool.install_ca_certificate" but with an empty "purpose",
 the trusted certificate will be stored in the existing "Trusted Default" and "Default Bundle" for general purpose.
+
 There is no general‑purpose store for trusted peer certificates, because each peer certificate is specific to a single server and therefore unsuitable for a shared trust bundle for general purpose.
+
 The pool "Trusted Pool" and "Pool Bundle" are for host-to-host TLS communications within a pool. This design doesn't change them.
 
 
