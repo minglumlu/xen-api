@@ -45,6 +45,11 @@ module Feature = struct
     | Vdi_mirror_in
     | Vdi_clone
     | Vdi_snapshot
+    | Vdi_snapshot_on_attacher
+        (** SMAPIv3: VDI.snapshot may be safely dispatched to the host
+            currently holding the VDI's VBD attached, instead of the SR's
+            master/coordinator. Used by xfsolvm so a supporter that owns the
+            chain can take the snapshot locally without involving master. *)
     | Vdi_resize
     | Vdi_activate
     | Vdi_activate_readonly
@@ -88,6 +93,7 @@ module Feature = struct
     ; ("VDI_RESIZE_ONLINE", Vdi_resize_online)
     ; ("VDI_CLONE", Vdi_clone)
     ; ("VDI_SNAPSHOT", Vdi_snapshot)
+    ; ("VDI_SNAPSHOT_ON_ATTACHER", Vdi_snapshot_on_attacher)
     ; ("VDI_ACTIVATE", Vdi_activate)
     ; ("VDI_ACTIVATE_READONLY", Vdi_activate_readonly)
     ; ("VDI_DEACTIVATE", Vdi_deactivate)

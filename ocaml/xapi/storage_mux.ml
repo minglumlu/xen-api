@@ -449,6 +449,85 @@ module Mux = struct
       C.VDI.set_name_description (Debug_info.to_string di) sr vdi
         new_name_description
 
+    (* Proactive routing for plugins advertising VDI_SNAPSHOT_ON_ATTACHER.
+       If the VDI's VBD is currently attached on a non-master host, raise
+       Activated_on_another_host so the handler in [snapshot] redirects the
+       call there. Lets supporter-owned chains take their own snapshot
+       locally — see xfsolvm's chunk C design. *)
+    let snapshot_attacher_routing_check ~dbg ~sr ~vdi_info =
+      if not (sr_has_capability sr Smint.Feature.Vdi_snapshot_on_attacher)
+      then ()
+      else
+        match vdi_info.uuid with
+        | None ->
+            ()
+        | Some vdi_uuid ->
+            Server_helpers.exec_with_new_task
+              "smapiv2.snapshot.attacher_routing"
+              ~subtask_of:(Ref.of_string dbg) (fun __context ->
+                try
+                  let vdi_ref =
+                    Db.VDI.get_by_uuid ~__context ~uuid:vdi_uuid
+                  in
+                  let expr =
+                    Xapi_database.Db_filter_types.(
+                      And
+                        ( Eq (Field "VDI", Literal (Ref.string_of vdi_ref))
+                        , Eq
+                            ( Field "currently_attached"
+                            , Literal "true"
+                            )
+                        )
+                    )
+                  in
+                  let vbds = Db.VBD.get_records_where ~__context ~expr in
+                  let master_uuid =
+                    Db.Host.get_uuid ~__context
+                      ~self:(Helpers.get_master ~__context)
+                  in
+                  let attacher_uuids =
+                    vbds
+                    |> List.filter_map (fun (_, vbd_rec) ->
+                           let vm = vbd_rec.API.vBD_VM in
+                           try
+                             let host_ref =
+                               Db.VM.get_resident_on ~__context ~self:vm
+                             in
+                             if host_ref = Ref.null then None
+                             else
+                               Some
+                                 (Db.Host.get_uuid ~__context
+                                    ~self:host_ref
+                                 )
+                           with _ -> None
+                       )
+                    |> List.sort_uniq compare
+                    |> List.filter (fun h -> h <> master_uuid)
+                  in
+                  match attacher_uuids with
+                  | [host_uuid] ->
+                      debug
+                        "VDI_SNAPSHOT_ON_ATTACHER: VDI %s attached on %s, \
+                         redirecting Volume.snapshot there"
+                        vdi_uuid host_uuid ;
+                      raise
+                        (Storage_error
+                           (Activated_on_another_host host_uuid)
+                        )
+                  | _ ->
+                      ()
+                  (* zero non-master attachers, or ambiguous (sharable VDI
+                     on multiple hosts) — fall through to default master
+                     routing *)
+                with
+                | Storage_error _ as e ->
+                    raise e
+                | _ ->
+                    ()
+                (* DB lookup failure: treat as "no proactive redirect", fall
+                   through. *)
+            )
+
     let snapshot () ~dbg ~sr ~vdi_info =
       with_dbg ~name:"VDI.snapshot" ~dbg @@ fun di ->
       info "VDI.snapshot dbg:%s sr:%s vdi_info:%s" dbg (s_of_sr sr)
@@ -456,7 +535,9 @@ module Mux = struct
       let module C = StorageAPI (Idl.Exn.GenClient (struct
         let rpc = of_sr sr
       end)) in
-      try C.VDI.snapshot (Debug_info.to_string di) sr vdi_info
+      try
+        snapshot_attacher_routing_check ~dbg ~sr ~vdi_info ;
+        C.VDI.snapshot (Debug_info.to_string di) sr vdi_info
       with Storage_interface.Storage_error (Activated_on_another_host uuid) ->
         Server_helpers.exec_with_new_task "smapiv2.snapshot.activated"
           ~subtask_of:(Ref.of_string dbg) (fun __context ->
